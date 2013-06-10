@@ -23,11 +23,12 @@ module JekyllImport
              FROM node AS n, \
                   node_revisions AS nr \
              WHERE (n.type = 'blog' OR n.type = 'story') \
-             AND n.vid = nr.vid AND n.nid = 4"
+             AND n.vid = nr.vid"
 
 
     def self.get_user_for_node(db, uid)
-      db[:users].where(:uid=>uid).first[:name]
+      author = db[:users].where(:uid=>uid).first[:name]
+      author.gsub(".", "_")
     end
 
     def self.process(dbname, user, pass, host = 'localhost', prefix = '')
@@ -49,13 +50,14 @@ module JekyllImport
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<meta http-equiv="refresh" content="0;url={{ page.refresh_to_post_id }}.html" />
+<meta http-equiv="refresh" content="0;url={{ page.refresh_to_post_id }}" />
 </head>
 </html>
 EOF
       end
 
 
+      only = [4, 6]
       skip = []
 
       db[QUERY].each do |post|
@@ -64,6 +66,10 @@ EOF
         user_id = post[:uid]
 
         if skip.include?(node_id)
+          next
+        end
+
+        if not only.include?(node_id)
           next
         end
 
@@ -79,10 +85,10 @@ EOF
         # Get the relevant fields as a hash, delete empty fields and convert
         # to YAML for the header
         data = {
+           'migrated' => true,
            'layout' => 'post',
            'title' => title.to_s,
            'created' => created,
-           'permalink' => 'node/%s' % [node_id],
            'author' => self.get_user_for_node(db, user_id)
          }.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
