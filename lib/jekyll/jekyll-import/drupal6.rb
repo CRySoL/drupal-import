@@ -49,7 +49,7 @@ module JekyllImport
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<meta http-equiv="refresh" content="0;url={{ page.refresh_to_post_id }}.html" />
+<meta http-equiv="refresh" content="0;url={{ page.refresh_to_post_id }}" />
 </head>
 </html>
 EOF
@@ -82,7 +82,6 @@ EOF
            'layout' => 'post',
            'title' => title.to_s,
            'created' => created,
-           'permalink' => 'node/%s' % [node_id],
            'author' => self.get_user_for_node(db, user_id)
          }.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
