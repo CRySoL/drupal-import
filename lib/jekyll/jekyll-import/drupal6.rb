@@ -31,6 +31,34 @@ module JekyllImport
       author.gsub(".", "_")
     end
 
+    def self.get_category_for_node(db, nid)
+      terms = db[:term_node].where(:nid=>nid)
+      terms.each do |term|
+        tid = term[:tid]
+
+        row = db[:term_data].where(:tid=>tid).first
+        if row[:vid] == 1
+          cat = row[:name]
+          cat[':: '] = ''
+          return cat
+        end
+      end
+    end
+
+    def self.get_tags_for_node(db, nid)
+      tags = []
+      terms = db[:term_node].where(:nid=>nid)
+      terms.each do |term|
+        tid = term[:tid]
+
+        row = db[:term_data].where(:tid=>tid).first
+        if row[:vid] != 1
+          tags.push(row[:name])
+        end
+      end
+      return tags
+    end
+
     def self.process(dbname, user, pass, host = 'localhost', prefix = '')
       db = Sequel.mysql(dbname, :user => user, :password => pass, :host => host, :encoding => 'utf8')
 
@@ -57,7 +85,7 @@ EOF
       end
 
 
-      only = [4, 6]
+      only = [6, 1695]
       skip = []
 
       db[QUERY].each do |post|
@@ -82,15 +110,28 @@ EOF
         slug = title.strip.downcase.gsub(/(&|&amp;)/, ' and ').gsub(/[\s\.\/\\]/, '-').gsub(/[^\w-]/, '').gsub(/[-_]{2,}/, '-').gsub(/^[-_]/, '').gsub(/[-_]$/, '')
         name = time.strftime("%Y-%m-%d-") + slug + '.textile'
 
+        category = self.get_category_for_node(db, node_id)
+        tags = self.get_tags_for_node(db, node_id)
+
         # Get the relevant fields as a hash, delete empty fields and convert
         # to YAML for the header
-        data = {
+        front_matter = {
            'migrated' => true,
            'layout' => 'post',
            'title' => title.to_s,
            'created' => created,
            'author' => self.get_user_for_node(db, user_id)
-         }.delete_if { |k,v| v.nil? || v == ''}.to_yaml
+         }
+
+        if category
+          front_matter['category'] = category
+        end
+
+        if tags
+            front_matter['tags'] = tags
+        end
+
+        data = front_matter.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
         # Write out the data and content to file
         File.open("#{dir}/#{name}", "w") do |f|
