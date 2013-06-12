@@ -85,7 +85,7 @@ EOF
       end
 
 
-      only = [6, 1695]
+      only = [4, 6, 1695]
       skip = []
 
       db[QUERY].each do |post|
@@ -127,7 +127,7 @@ EOF
           front_matter['category'] = category
         end
 
-        if tags
+        if tags.length > 0
             front_matter['tags'] = tags
         end
 
@@ -137,7 +137,7 @@ EOF
         File.open("#{dir}/#{name}", "w") do |f|
           f.puts data
           f.puts "---"
-          f.puts content
+          f.puts content.gsub(/\r\n/, "\n")
         end
 
         # Make a file to redirect from the old Drupal URL
