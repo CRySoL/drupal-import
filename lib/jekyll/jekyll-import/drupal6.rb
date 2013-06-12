@@ -59,6 +59,11 @@ module JekyllImport
       return tags
     end
 
+    def self.get_format(db, nid)
+      reg = db.fetch("select f.name from node as n, node_revisions as r, filter_formats as f where n.nid=%s and r.vid = n.vid and r.format=f.format;" % nid).first
+      return reg[:name].downcase
+    end
+
     def self.process(dbname, user, pass, host = 'localhost', prefix = '')
       db = Sequel.mysql(dbname, :user => user, :password => pass, :host => host, :encoding => 'utf8')
 
@@ -85,7 +90,7 @@ EOF
       end
 
 
-      only = [6, 1695]
+      only = [4, 6, 1695]
       skip = []
 
       db[QUERY].each do |post|
@@ -108,10 +113,17 @@ EOF
         is_published = post[:status] == 1
         dir = is_published ? "_posts" : "_drafts"
         slug = title.strip.downcase.gsub(/(&|&amp;)/, ' and ').gsub(/[\s\.\/\\]/, '-').gsub(/[^\w-]/, '').gsub(/[-_]{2,}/, '-').gsub(/^[-_]/, '').gsub(/[-_]$/, '')
-        name = time.strftime("%Y-%m-%d-") + slug + '.textile'
 
         category = self.get_category_for_node(db, node_id)
         tags = self.get_tags_for_node(db, node_id)
+
+        format = self.get_format(db, node_id)
+        if format != 'textile'
+          format = 'html'
+        end
+
+        name = time.strftime("%Y-%m-%d-") + slug + '.' + format
+        puts name
 
         # Get the relevant fields as a hash, delete empty fields and convert
         # to YAML for the header
@@ -165,3 +177,6 @@ EOF
     end
   end
 end
+
+
+# filter_formats 5,6
