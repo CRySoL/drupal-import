@@ -4,6 +4,9 @@ require 'sequel'
 require 'fileutils'
 require 'safe_yaml'
 
+require 'rinku'
+
+
 # NOTE: This converter requires Sequel and the MySQL gems.
 # The MySQL gem can be difficult to install on OS X. Once you have MySQL
 # installed, running the following commands should work:
@@ -81,18 +84,21 @@ EOF
 
 
       only = [4, 6, 1695, 1704, 1705]
-      skip = []
+      only = [1701]
+      skip = [260, 261, 207]
 
       db[QUERY].each do |post|
         # Get required fields and construct Jekyll compatible name
         node_id = post[:nid]
+        puts '---'
+        puts node_id
         user_id = post[:uid]
 
         if skip.include?(node_id)
           next
         end
 
-        if not only.include?(node_id)
+        if only and not only.include?(node_id)
           next
         end
 
@@ -113,7 +119,6 @@ EOF
         end
 
         name = time.strftime("%Y-%m-%d-") + slug + '.' + format
-        puts
         puts name
         puts title
         puts category
@@ -122,7 +127,7 @@ EOF
         # Get the relevant fields as a hash, delete empty fields and convert
         # to YAML for the header
         front_matter = {
-           'migrated' => true,
+           'migrated' => 'node/%s' % node_id,
            'layout' => 'post',
            'title' => title.to_s,
            'created' => created,
@@ -140,12 +145,25 @@ EOF
         data = front_matter.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
         content.gsub!(/\r\n/, "\n")
-        content.gsub!("[code class=shell]", '<pre class="console">')
-        content.gsub!("[code class=console]", '<pre class="console">')
-        content.gsub!('[code]', "<pre>")
+        content.gsub!("[code class=shell]", "\n<pre class=\"console\">")
+        content.gsub!("[code class=console]", "\n<pre class=\"console\">")
+        content.gsub!("[code class=bash]", "\n<pre>")
+        content.gsub!("[code lang=php]", "\n<pre>")
+        content.gsub!("[code class=html4strict]", "\n<pre>")
+        content.gsub!('[code]', "\n<pre>")
         content.gsub!('[/code]',"</pre>")
         content.gsub!('<notextile>', '')
         content.gsub!('</notextile>', '')
+
+        content.gsub!('<kbd>', "\n<pre class=\"console\">")
+        content.gsub!('</kbd>', "</pre>")
+
+        content = Rinku.auto_link(content)
+
+        parts = content.split('<!--break-->')
+        if parts[1].length < 10
+          content.gsub!('<!--break-->', '')
+        end
 
         # Write out the data and content to file
         File.open("#{dir}/#{name}", "w") do |f|
