@@ -32,34 +32,24 @@ module JekyllImport
     end
 
     def self.get_category_for_node(db, nid)
-      terms = db[:term_node].where(:nid=>nid)
-      terms.each do |term|
-        tid = term[:tid]
-
-        row = db[:term_data].where(:tid=>tid).first
-        if row[:vid] == 1
-          cat = row[:name]
-          cat[':: '] = ''
-          return cat
-        end
+      category = db.fetch("select d.name from term_node as n, term_data as d where n.nid = %s and n.tid = d.tid and d.vid = 1" % nid).first
+      if category
+        return category[:name].sub(':: ', '')
+      else
+        return nil
       end
     end
 
     def self.get_tags_for_node(db, nid)
       tags = []
-      terms = db[:term_node].where(:nid=>nid)
-      terms.each do |term|
-        tid = term[:tid]
-
-        row = db[:term_data].where(:tid=>tid).first
-        if row[:vid] != 1
-          tags.push(row[:name])
-        end
+      ds = db.fetch("select d.name from term_node as n, term_data as d where n.nid = %s and n.tid = d.tid and d.vid != 1" % nid)
+      ds.each do |tag|
+        tags.push(tag[:name])
       end
       return tags
     end
 
-    def self.get_format(db, nid)
+    def self.get_node_format(db, nid)
       reg = db.fetch("select f.name from node as n, node_revisions as r, filter_formats as f where n.nid=%s and r.vid = n.vid and r.format=f.format;" % nid).first
       return reg[:name].downcase
     end
@@ -90,7 +80,7 @@ EOF
       end
 
 
-      only = [4, 6, 1695]
+      only = [4, 6, 1695, 1704, 1705]
       skip = []
 
       db[QUERY].each do |post|
@@ -117,13 +107,17 @@ EOF
         category = self.get_category_for_node(db, node_id)
         tags = self.get_tags_for_node(db, node_id)
 
-        format = self.get_format(db, node_id)
+        format = self.get_node_format(db, node_id)
         if format != 'textile'
           format = 'html'
         end
 
         name = time.strftime("%Y-%m-%d-") + slug + '.' + format
+        puts
         puts name
+        puts title
+        puts category
+        puts tags
 
         # Get the relevant fields as a hash, delete empty fields and convert
         # to YAML for the header
@@ -145,11 +139,19 @@ EOF
 
         data = front_matter.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
+        content.gsub!(/\r\n/, "\n")
+        content.gsub!("[code class=shell]", '<pre class="console">')
+        content.gsub!("[code class=console]", '<pre class="console">')
+        content.gsub!('[code]', "<pre>")
+        content.gsub!('[/code]',"</pre>")
+        content.gsub!('<notextile>', '')
+        content.gsub!('</notextile>', '')
+
         # Write out the data and content to file
         File.open("#{dir}/#{name}", "w") do |f|
           f.puts data
           f.puts "---"
-          f.puts content.gsub(/\r\n/, "\n")
+          f.puts content
         end
 
         # Make a file to redirect from the old Drupal URL
@@ -177,6 +179,3 @@ EOF
     end
   end
 end
-
-
-# filter_formats 5,6
