@@ -84,23 +84,25 @@ EOF
 
 
       only = [4, 6, 1695, 1704, 1705]
-      only = [1701]
+      only = [1440, 1701]
+      only = [1358]
       skip = [260, 261, 207]
 
       db[QUERY].each do |post|
         # Get required fields and construct Jekyll compatible name
         node_id = post[:nid]
-        puts '---'
-        puts node_id
         user_id = post[:uid]
 
         if skip.include?(node_id)
           next
         end
 
-        if only and not only.include?(node_id)
+        if only.length > 0  and not only.include?(node_id)
           next
         end
+
+        puts '---'
+        puts node_id
 
         title = post[:title]
         content = post[:body]
@@ -114,13 +116,16 @@ EOF
         tags = self.get_tags_for_node(db, node_id)
 
         format = self.get_node_format(db, node_id)
-        if format != 'textile'
+        if format.include? 'textile'
+          format = 'textile'
+        else
           format = 'html'
         end
 
         name = time.strftime("%Y-%m-%d-") + slug + '.' + format
         puts name
         puts title
+        puts format
         puts category
         puts tags
 
@@ -149,19 +154,24 @@ EOF
         content.gsub!("[code class=console]", "\n<pre class=\"console\">")
         content.gsub!("[code class=bash]", "\n<pre>")
         content.gsub!("[code lang=php]", "\n<pre>")
+        content.gsub!("[code class=cpp]", "\n<pre>")
         content.gsub!("[code class=html4strict]", "\n<pre>")
+
         content.gsub!('[code]', "\n<pre>")
         content.gsub!('[/code]',"</pre>")
+
         content.gsub!('<notextile>', '')
         content.gsub!('</notextile>', '')
 
         content.gsub!('<kbd>', "\n<pre class=\"console\">")
         content.gsub!('</kbd>', "</pre>")
 
-        content = Rinku.auto_link(content)
+        content.gsub!(':http', '::ttp')
+        content = Rinku.auto_link(content, mode=:urls)
+        content.gsub!('::ttp', ':http')
 
         parts = content.split('<!--break-->')
-        if parts[1].length < 10
+        if parts[1] and parts[1].length < 10
           content.gsub!('<!--break-->', '')
         end
 
@@ -183,7 +193,7 @@ EOF
             File.open("#{url_alias[:dst]}/index.md", "w") do |f|
               f.puts "---"
               f.puts "layout: refresh"
-              f.puts "refresh_to_post_id: /#{time.strftime("%Y/%m/%d/") + slug}"
+              f.puts "refresh_to_post_id: /#{category}/#{time.strftime("%Y-%m-%d/") + slug}"
               f.puts "---"
             end
           end
