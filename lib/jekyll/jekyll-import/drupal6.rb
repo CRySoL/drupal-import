@@ -150,21 +150,21 @@ EOF
         data = front_matter.delete_if { |k,v| v.nil? || v == ''}.to_yaml
 
         content.gsub!(/\r\n/, "\n")
-        content.gsub!("[code class=shell]", "\n<pre class=\"console\">")
-        content.gsub!("[code class=console]", "\n<pre class=\"console\">")
-        content.gsub!("[code class=bash]", "\n<pre>")
-        content.gsub!("[code lang=php]", "\n<pre>")
-        content.gsub!("[code class=cpp]", "\n<pre>")
-        content.gsub!("[code class=html4strict]", "\n<pre>")
+        content.gsub!("[code class=shell]", "\n<div class=\"console\">\n{% highlight console %}")
+        content.gsub!("[code class=console]", "\n<div class=\"console\">\n{% highlight console %}")
+        content.gsub!("[code class=bash]", "\n<div>\n{% highlight bash %}")
+        content.gsub!("[code lang=php]", "\n<div>\n{% highlight php %}")
+        content.gsub!("[code class=cpp]", "\n<div>\n{% highlight cpp %}")
+        content.gsub!("[code class=html4strict]", "\n<div>\n{% highlight html %}")
+        content.gsub!('[code]', "\n<div>{% highlight text %}")
 
-        content.gsub!('[code]', "\n<pre>")
-        content.gsub!('[/code]',"</pre>")
+        content.gsub!('[/code]', "{% endhighlight %}\n</div>")
 
         content.gsub!('<notextile>', '')
         content.gsub!('</notextile>', '')
 
-        content.gsub!('<kbd>', "\n<pre class=\"console\">")
-        content.gsub!('</kbd>', "</pre>")
+        content.gsub!('<kbd>', "\n<div class=\"console\">\n{% highlight console %}")
+        content.gsub!('</kbd>', "{% endhighlight %}\n</div>")
 
         content.gsub!(':http', '::ttp')
         content = Rinku.auto_link(content, mode=:urls)
