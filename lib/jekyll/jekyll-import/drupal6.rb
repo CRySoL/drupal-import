@@ -219,6 +219,14 @@ EOF
 
         content.gsub!("</blockquote>", "</blockquote>\n\n<!--break-->\n\n")
 
+        if content.length > 400
+          puts "tamaño %s" % content.length
+          a, b = content.split("\n", 2)
+          if a and b and not content.include? "<!--break-->"
+            content = a + "\n\n<!--break-->\n\n" + b
+          end
+        end
+
         parts = content.split('<!--break-->')
         if parts[1] and parts[1].length < 10
           content.gsub!('<!--break-->', '')
