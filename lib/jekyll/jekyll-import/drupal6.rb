@@ -162,7 +162,7 @@ EOF
 
         content.gsub!(/\r\n/, "\n")
 
-        content.gsub!('[code]',                   "\n<temp-div>\n{% highlight text %}")
+        content.gsub!('[code]',                   "\n<pre div>\n{% highlight text %}")
 
 
         content.gsub!(/\[code\s*\w+=["']?shell["']?\s*[\w=]*\]/,       "\n<pre div class=\"console\">\n{% highlight console %}\n")
