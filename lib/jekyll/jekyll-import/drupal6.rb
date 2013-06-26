@@ -25,8 +25,10 @@ module JekyllImport
                     n.status \
              FROM node AS n, \
                   node_revisions AS nr \
-             WHERE (n.type = 'blog' OR n.type = 'story') \
+             WHERE (n.type = 'blog' OR n.type = 'story' ) \
              AND n.vid = nr.vid"
+
+# n.type = 'frase'
 
 
     def self.get_user_for_node(db, uid)
@@ -37,7 +39,8 @@ module JekyllImport
     def self.get_category_for_node(db, nid)
       category = db.fetch("select d.name from term_node as n, term_data as d where n.nid = %s and n.tid = d.tid and d.vid = 1" % nid).first
       if category
-        return category[:name].sub(':: ', '')
+        retval = category[:name]
+        return retval
       else
         return nil
       end
@@ -209,21 +212,23 @@ EOF
 
         content.gsub!('bq. ', '')
 
+        # links
         content.gsub!(':http', '::ttp')
         content.gsub!(':http://www', '::ttp::ww')
         content = Rinku.auto_link(content, mode=:urls)
         content.gsub!('::ttp', ':http')
         content.gsub!( '::ttp::ww', ':http://www')
+        content.gsub!("http://crysol.org/files/", "/assets/files/")
 
         content.gsub!('pre div', 'div')
 
-        content.gsub!("</blockquote>", "</blockquote>\n\n<!--break-->\n\n")
+        content.gsub!("</blockquote>", "</blockquote><!--break-->")
 
         if content.length > 400
-          puts "tamaño %s" % content.length
+          puts "content size %s" % content.length
           a, b = content.split("\n", 2)
           if a and b and not content.include? "<!--break-->"
-            content = a + "\n\n<!--break-->\n\n" + b
+            content = a + "<!--break-->" + b
           end
         end
 
@@ -231,6 +236,8 @@ EOF
         if parts[1] and parts[1].length < 10
           content.gsub!('<!--break-->', '')
         end
+
+        content.gsub!("<!--break-->", "\n\n<!--break-->\n\n")
 
         # Write out the data and content to file
         File.open("#{dir}/#{name}", "w") do |f|
@@ -241,6 +248,11 @@ EOF
 
         # Make a file to redirect from the old Drupal URL
         if is_published
+          target = "/#{time.strftime("%Y-%m-%d/") + slug}"
+          if category
+              target = "/#{category}" + target
+          end
+
           aliases = db["SELECT dst FROM #{prefix}url_alias WHERE src = ?", "node/#{node_id}"].all
 
           aliases.push(:dst => "node/#{node_id}")
@@ -250,7 +262,7 @@ EOF
             File.open("p/#{url_alias[:dst]}/index.md", "w") do |f|
               f.puts "---"
               f.puts "layout: refresh"
-              f.puts "refresh_to_post_id: /#{category}/#{time.strftime("%Y-%m-%d/") + slug}"
+              f.puts "refresh_to_post_id: %s" % target
               f.puts "---"
             end
           end
