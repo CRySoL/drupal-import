@@ -167,20 +167,21 @@ EOF
         front_matter = {
            'migrated' => 'node/%s' % node_id,
            'layout' => 'post',
-           'title' => title.to_s,
+           'title' => title.force_encoding("UTF-8"),
            'created' => created,
-           'author' => self.get_user_for_node(db, user_id)
+           'author' => self.get_user_for_node(db, user_id).force_encoding("UTF-8")
          }
 
         if category
-          front_matter['category'] = category
+          front_matter['category'] = category.force_encoding("UTF-8")
         end
 
         if tags.length > 0
-            front_matter['tags'] = tags
+            front_matter['tags'] = tags.map { |i| i.force_encoding("UTF-8")}
         end
 
-        data = front_matter.delete_if { |k,v| v.nil? || v == ''}.to_yaml
+        data = front_matter.delete_if { |k,v| v.nil? || v == ''}
+        puts data.to_yaml
 
         content.gsub!(/\r\n/, "\n")
 
@@ -239,9 +240,10 @@ EOF
 
         content.gsub!("<!--break-->", "\n\n<!--break-->\n\n")
 
+
         # Write out the data and content to file
         File.open("#{dir}/#{name}", "w") do |f|
-          f.puts data
+          f.puts data.to_yaml
           f.puts "---"
           f.puts content
         end
