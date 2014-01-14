@@ -1,0 +1,9 @@
+deb: ruby1.9.1-dev
+gem: sequel
+gem: safe_yaml
+gem: rinku
+gem: mysql
+deb: libmysqlclient-dev
+deb: mysql-server-5.5
+run: echo "create database drupal" | mysql -u root -p
+run: mysql -u root -p drupal < drupal.sql
