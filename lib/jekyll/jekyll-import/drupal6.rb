@@ -216,10 +216,13 @@ EOF
         # links
         content.gsub!(':http', '::ttp')
         content.gsub!(':http://www', '::ttp::ww')
-        content = Rinku.auto_link(content, mode=:urls)
+        content.gsub!('::ttp::ww', ':http://www')
         content.gsub!('::ttp', ':http')
-        content.gsub!( '::ttp::ww', ':http://www')
         content.gsub!("http://crysol.org/files/", "/assets/files/")
+
+        content.gsub!('":http:', '":hZZp:')
+	content = Rinku.auto_link(content, mode=:urls)
+        content.gsub!('":hZZp:', '":http:')
 
         content.gsub!('pre div', 'div')
 
@@ -264,7 +267,7 @@ EOF
             File.open("p/#{url_alias[:dst]}/index.md", "w") do |f|
               f.puts "---"
               f.puts "layout: refresh"
-              f.puts "refresh_to_post_id: %s" % target
+              f.puts "refresh_to_post_id: %s.html" % target
               f.puts "---"
             end
           end
